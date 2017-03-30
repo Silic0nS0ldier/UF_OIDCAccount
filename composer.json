@@ -1,0 +1,25 @@
+{
+    "name": "Silic0nS0ldier/UF_OIDCAccount",
+    "type": "sprinkle",
+    "description": "Identity provider based account system for UserFrosting 4. Forked from stock account and admin sprinkles.",
+    "keywords": ["php user management", "bootstrap", "oauth 2", "open id connect"],
+    "homepage": "https://github.com/Silic0nS0ldier/UF_OIDCAccount/",
+    "license" : "MIT",
+    "authors" : [
+        {
+            "name": "Jordan Mele",
+            "homepage": "https://github.com/Silic0nS0ldier/"
+        }
+    ],
+    "version": "1.0",
+    "require": {
+        "birke/rememberme" : "^2.0",
+        "php": ">=5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "UserFrosting\\Sprinkle\\OIDCAccount\\": "src/",
+            "Silic0nS0ldier\\OIDCAccount\\": "src/"
+        }
+    }
+}
