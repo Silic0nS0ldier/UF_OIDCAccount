@@ -8,14 +8,10 @@ use UserFrosting\Sprinkle\Account\Model\User;
 use UserFrosting\Sprinkle\Core\Model\Verson;
 
 /**
-* Make sure 'account' and/or 'admin' sprinkles aren't in load order.
-*/
-
-
-/**
-* Inspect version table, ensure 'account' and/or 'admin' migrations not run.
-* Inspect tables to ensure they don't yet exist.
-*/
+ * Make sure 'account' and/or 'admin' sprinkles aren't in load order.
+ * - Inspect version table, ensure 'account' and/or 'admin' migrations not run.
+ * - Inspect tables to ensure they don't yet exist.
+ */
 if (count(Version::whereIn('sprinkle', [ 'account', 'admin' ])->get()) > 0) {
     echo PHP_EOL . "Detected 'account' and/or 'admin' in Version table. This Sprinkle is not compatible with the stock account system in UserFrosting." . PHP_EOL;
     die;
@@ -25,31 +21,16 @@ if (in_array('account', $sprinkles) || in_array('admin', $sprinkles)) {
     echo PHP_EOL . "Detected 'account' and/or 'admin' in load order. This Sprinkle is not compatible with the stock account system in UserFrosting." . PHP_EOL;
     die;
 }
-
-/**
-* Identity Providers table
-*/
-$schema->create('identity_providers', function (Blueprint $table) {
-    $table->increments('id');
-    $table->string('name')->comment('Friendly name for identity provider.');
-    $table->string('driver_name', 50)->comment('Name of \'driver\' used for connecting to this identify provider.');
-    $table->timestamps();
-    $table->unique('driver_name');
-
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
-});
-echo "Created table 'identity_providers'..." . PHP_EOL;
     
 /**
-* Users table.
-*/
+ * Users table.
+ */
 $schema->create('users', function (Blueprint $table) {
     $table->increments('id');
     $table->string('email', 254);
     $table->string('first_name', 30);
     $table->string('last_name', 30);
-    $table->string('identity_provider_id')->comment('The identity provider this user signed up with.');
+    $table->string('identity_provider')->comment('The identity provider this user signed up with.');
     $table->string('identity_provider_user_id')->comment('User id with identity provider. Needed as emails can change.');
     $table->string('locale', 10)->default('en_US')->comment('The language and locale to use for this user.');
     $table->boolean('flag_enabled')->default(1)->comment("Set to 1 if the user account is currently enabled, 0 otherwise.  Disabled accounts cannot be logged in to, but they retain all of their data and settings.");
@@ -59,7 +40,6 @@ $schema->create('users', function (Blueprint $table) {
     $table->unique([ 'identity_provider', 'email' ]);
     $table->index('identity_provider_user_id');
     $table->index('email');
-    $table->foreign('identity_provider_id')->references('id')->on('identity_providers');
 
     $table->collation = 'utf8_unicode_ci';
     $table->charset = 'utf8mb4';
@@ -67,13 +47,13 @@ $schema->create('users', function (Blueprint $table) {
 echo "Created table 'users'..." . PHP_EOL;
 
 /**
-* User activity table.
-*/
+ * User activity table.
+ */
 $schema->create('activities', function (Blueprint $table) {
     $table->increments('id');
     $table->string('ip_address', 45)->nullable();
     $table->integer('user_id')->unsigned();
-    $table->string('type', 255)->comment('An identifier used to track the type of activity.');
+    $table->string('type')->comment('An identifier used to track the type of activity.');
     $table->timestamp('occurred_at');
     $table->text('description')->nullable();
 
@@ -86,12 +66,12 @@ $schema->create('activities', function (Blueprint $table) {
 echo "Created table 'activities'..." . PHP_EOL;
 
 /**
-* Roles table. Users acquire permissions through roles.
-*/
+ * Roles table. Users acquire permissions through roles.
+ */
 $schema->create('roles', function (Blueprint $table) {
     $table->increments('id');
-    $table->string('slug');
     $table->string('name');
+    $table->string('slug');
     $table->text('description')->nullable();
     $table->timestamps();
 
@@ -101,6 +81,20 @@ $schema->create('roles', function (Blueprint $table) {
     $table->collation = 'utf8_unicode_ci';
     $table->charset = 'utf8mb4';
 });
+
+/**
+ * RoleUsers table. Creates relation between roles and users.
+ */
+$schema->create('role_users', function (Blueprint $table) {
+    $table->integer('role_id')->unsigned();
+    $table->integer('user_id')->unsigned();
+    $table->timestamps();
+
+    $table->collation = 'utf8_unicode_ci';
+    $table->charset = 'utf8mb4';
+});
+
+echo "Created table 'role_users'..." . PHP_EOL;
 
 // Add default roles
 $roles = [
@@ -119,8 +113,28 @@ foreach ($roles as $slug => $role) {
 echo "Created table 'roles'..." . PHP_EOL;
 
 /**
-* Many-to-many mapping between permissions and roles.
-*/
+ * Permissions table.
+ * Unlike the stock account system, permissions are not evaled as an additional safeguard against exploitation.
+ * Changes should also resolve a known issue where evaled code that crashes returns true, not to mention drastically improve debugging experience.
+ */
+$schema->create('permissions', function(Blueprint $table) {
+    $table->increments('id');
+    $table->string('name');
+    $table->text('description')->nullable();
+    $table->string('slug')->comment('A code that references a specific action or URI that an assignee of this permission has access to.');
+    $table->text('callback')->comment('A callback used PHP side, that returns True/False to indicate permission.');
+    $table->json('parameters')->nullable()->comment('JSON encoded associative array, for which each index is a default value to be passed to callback. Parameter position is specified by index number.');
+    $table->timestamps();
+
+    $table->collation = 'utf8_unicode_ci';
+    $table->charset = 'utf8mb4';
+});
+
+echo "Created table 'permissions'..." . PHP_EOL;
+
+/**
+ * Many-to-many mapping between permissions and roles.
+ */
 $schema->create('permission_roles', function (Blueprint $table) {
     $table->integer('permission_id')->unsigned();
     $table->integer('role_id')->unsigned();
@@ -138,24 +152,6 @@ $schema->create('permission_roles', function (Blueprint $table) {
 
 echo "Created table 'permission_roles'..." . PHP_EOL;
 
-/**
-* Permissions table.
-* Unlike the stock account system, permissions are not evaled as an additional safeguard against exploitation.
-* Changes should also resolve a known issue where evaled code that crashes returns true, not to mention drastically improve debugging experience.
-*/
-$schema->create('permissions', function(Blueprint $table) {
-    $table->increments('id');
-    $table->string('slug')->comment('A code that references a specific action or URI that an assignee of this permission has access to.');
-    $table->string('name');
-    $table->text('callback')->comment('A callback used PHP side, that returns True/False to indicate permission.');
-    $table->json('parameters')->nullable()->comment('JSON encoded associative array, for which each index is a default value to be passed to callback. Parameter position is specified by index number.');
-    $table->text('description')->nullable();
-    $table->timestamps();
-
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
-});
-
 $defaultRoleIds = [
     'site-admin' => Role::where('slug', 'site-admin')->first()->id
 ];
@@ -166,32 +162,9 @@ $permissions = [];
 // Add default mappings to permissions
 // Root doesn't need any permissions
 
-echo "Created table 'permissions'..." . PHP_EOL;
-
 /**
-* Persistences table. (generlised alias for 'rememberme')
-*/
-$schema->create('persistences', function (Blueprint $table) {
-    $table->increments('id');
-    $table->integer('user_id')->unsigned();
-    $table->string('token', 40);
-    $table->string('persistent_token', 40);
-    $table->timestamp('expires_at')->nullable();
-    $table->timestamps();
-
-    $table->foreign('user_id')->references('id')->on('users');
-    $table->index('user_id');
-    $table->index('token');
-    $table->index('persistent_token');
-
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
-});
-echo "Created table 'persistences'..." . PHP_EOL;
-
-/**
-    * Many-to-many mapping between roles and users.
-    */
+ * Many-to-many mapping between roles and users.
+ */
 $schema->create('role_users', function (Blueprint $table) {
     $table->integer('user_id')->unsigned();
     $table->integer('role_id')->unsigned();
@@ -209,8 +182,8 @@ $schema->create('role_users', function (Blueprint $table) {
 echo "Created table 'role_users'..." . PHP_EOL;
 
 /**
-    * Table for database sessions.
-    */
+ * Table for database sessions.
+ */
 $schema->create('sessions', function (Blueprint $table) {
     $table->string('id')->unique();
     $table->integer('user_id')->nullable();
@@ -220,44 +193,25 @@ $schema->create('sessions', function (Blueprint $table) {
     $table->integer('last_activity');
     $table->timestamps();
 
+    $table->foreign('user_id')->references('id')->on('users');
+
     $table->collation = 'utf8_unicode_ci';
     $table->charset = 'utf8mb4';
 });
 echo "Created table 'sessions'..." . PHP_EOL;
 
-/**
-    * Manages requests for email account verification.
-    */
-$schema->create('verifications', function (Blueprint $table) {
-    $table->increments('id');
-    $table->integer('user_id')->unsigned();
-    $table->string('hash');
-    $table->boolean('completed')->default(0);
-    $table->timestamp('expires_at')->nullable();
-    $table->timestamp('completed_at')->nullable();
-    $table->timestamps();
-
-    $table->foreign('user_id')->references('id')->on('users');
-    $table->index('user_id');
-    $table->index('hash');
-
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
-});
-echo "Created table 'verifications'..." . PHP_EOL;
-
 // Make sure that there are no users currently in the user table
 // We setup the root account here so it can be done independent of the version check
 
 echo PHP_EOL . 'To complete the installation process, you must set up provide the email and service to be assigned as root admin (master).' . PHP_EOL;
-
-
 echo 'Please answer the following questions to complete this process:' . PHP_EOL;
 
 // Get service (should output avalible options, and get index response, at some point)
+// Get identity providers via services provider, and show list
+// if nothing returned, warn and abort.
 echo PHP_EOL . 'Please choose the identity provider service: ';
 $service = rtrim(fgets(STDIN), "\r\n");
-while (strlen($service) < 1) {
+while (strlen($service) < 1 || strlen($service) > 20) {
     echo PHP_EOL . "Invalid service '$service', please try again: ";
     $service = rtrim(fgets(STDIN), "\r\n");
 }
@@ -270,7 +224,9 @@ while (strlen($email) < 1 || strlen($email) > 254 || !filter_var($email, FILTER_
     $email = rtrim(fgets(STDIN), "\r\n");
 }
 
-// Store details somewhere.
+// Store details in cache
+$container->cache->forever('admin_email', $email);
+$container->cache->forever('admin_id_provider', $service);
 
 // To make output pretty...
 echo PHP_EOL;
