@@ -36,19 +36,22 @@ class User extends UFModel
      * @var string Columns that are permitted to be altered.
      */
     protected $fillable = [
+        'email',
         'first_name',
         'last_name',
         'identity_provider',
         'identity_provider_user_id',
         'locale',
-        'flag_enabled'
+        'enabled',
+        'email_verified'
     ];
 
     /**
      * @var array Attributes that should be cast to native types.
      */
     protected $casts = [
-        'flag_enabled' => 'boolean'
+        'enabled' => 'boolean',
+        'email_verified' => 'boolean'
     ];
 
     /**
@@ -69,19 +72,19 @@ class User extends UFModel
 
     /**
      * Get the activities associated with this user.
-     *
      * @return QueryBuilder
      */
     public function activities()
     {
-        return $this->hasOne(self::$ci->dbModel->Activity);
+        return $this->hasMany(self::$ci->dbModel->Activity);
     }
 
     //delete
+    //needed to eliminate all relations
 
-    //roles
     /**
      * Get the roles associated with this user.
+     * @return QueryBuilder
      */
     public function roles()
     {
@@ -90,6 +93,7 @@ class User extends UFModel
 
     /**
      * Get the permissions associated with this user.
+     * @return QueryBuilder
      */
     public function permissions()
     {

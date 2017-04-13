@@ -2,10 +2,10 @@
 
 use Illuminate\Database\Capsule\Manager as Capsule;
 use Illuminate\Database\Schema\Blueprint;
-use UserFrosting\Sprinkle\Account\Model\Permission;
-use UserFrosting\Sprinkle\Account\Model\Role;
-use UserFrosting\Sprinkle\Account\Model\User;
-use UserFrosting\Sprinkle\Core\Model\Verson;
+use UserFrosting\Sprinkle\OIDCAccount\Model\Permission;
+use UserFrosting\Sprinkle\OIDCAccount\Model\Role;
+use UserFrosting\Sprinkle\OIDCAccount\Model\User;
+use UserFrosting\Sprinkle\Core\Model\Version;
 
 /**
  * Make sure 'account' and/or 'admin' sprinkles aren't in load order.
@@ -33,7 +33,8 @@ $schema->create('users', function (Blueprint $table) {
     $table->string('identity_provider')->comment('The identity provider this user signed up with.');
     $table->string('identity_provider_user_id')->comment('User id with identity provider. Needed as emails can change.');
     $table->string('locale', 10)->default('en_US')->comment('The language and locale to use for this user.');
-    $table->boolean('flag_enabled')->default(1)->comment("Set to 1 if the user account is currently enabled, 0 otherwise.  Disabled accounts cannot be logged in to, but they retain all of their data and settings.");
+    $table->boolean('enabled')->default(1)->comment("Set to 1 if the user account is currently enabled, 0 otherwise.  Disabled accounts cannot be logged in to, but they retain all of their data and settings.");
+    $table->boolean('email_verified')->default(0)->comment('Indicates email can be accessed by user.');
     $table->timestamps();
 
     $table->unique([ 'identity_provider', 'identity_provider_user_id' ]);
@@ -41,8 +42,8 @@ $schema->create('users', function (Blueprint $table) {
     $table->index('identity_provider_user_id');
     $table->index('email');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 echo "Created table 'users'..." . PHP_EOL;
 
@@ -60,8 +61,8 @@ $schema->create('activities', function (Blueprint $table) {
     $table->foreign('user_id')->references('id')->on('users');
     $table->index('user_id');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 echo "Created table 'activities'..." . PHP_EOL;
 
@@ -78,39 +79,33 @@ $schema->create('roles', function (Blueprint $table) {
     $table->unique('slug');
     $table->index('slug');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 
-/**
- * RoleUsers table. Creates relation between roles and users.
- */
-$schema->create('role_users', function (Blueprint $table) {
-    $table->integer('role_id')->unsigned();
-    $table->integer('user_id')->unsigned();
-    $table->timestamps();
-
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
-});
-
-echo "Created table 'role_users'..." . PHP_EOL;
+echo "Created table 'roles'..." . PHP_EOL;
 
 // Add default roles
 $roles = [
     // The root-admin permission is hard coded to the first user for security.
     // Use the authenticators 'isRoot' method to determine if user is root-admin.
     'site-admin' => new Role([
-        'slug' => 'site-admin',
         'name' => 'Site Administrator',
+        'slug' => 'site-admin',
         'description' => 'This role is meant for "site administrators", who can basically do anything except create, edit, or delete other administrators.'
+    ]),
+    'user' => new Role([
+        'name' => 'User',
+        'slug' => 'user',
+        'description' => 'This role provides basic user functionality.'
     ])
 ];
 
+// Save roles.
 foreach ($roles as $slug => $role) {
-    $role->save();
+    echo "Creating role '$slug'..." . PHP_EOL;
+    $roles[$slug] = $role->save();
 }
-echo "Created table 'roles'..." . PHP_EOL;
 
 /**
  * Permissions table.
@@ -122,15 +117,17 @@ $schema->create('permissions', function(Blueprint $table) {
     $table->string('name');
     $table->text('description')->nullable();
     $table->string('slug')->comment('A code that references a specific action or URI that an assignee of this permission has access to.');
-    $table->text('callback')->comment('A callback used PHP side, that returns True/False to indicate permission.');
-    $table->json('parameters')->nullable()->comment('JSON encoded associative array, for which each index is a default value to be passed to callback. Parameter position is specified by index number.');
+    $table->string('callback')->comment('A callback used PHP side, that returns True/False to indicate permission.');
+    $table->text('parameters')->nullable()->comment('JSON encoded array to be passed (and unpakced) to the callback. Parameter position is specified by index number. Refer to docs for pattern.');
     $table->timestamps();
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 
 echo "Created table 'permissions'..." . PHP_EOL;
+
+// Add permissions
 
 /**
  * Many-to-many mapping between permissions and roles.
@@ -146,21 +143,13 @@ $schema->create('permission_roles', function (Blueprint $table) {
     $table->index('permission_id');
     $table->index('role_id');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 
 echo "Created table 'permission_roles'..." . PHP_EOL;
 
-$defaultRoleIds = [
-    'site-admin' => Role::where('slug', 'site-admin')->first()->id
-];
-
-// Add default permissions
-$permissions = [];
-
-// Add default mappings to permissions
-// Root doesn't need any permissions
+// Establish relations between roles and permissions
 
 /**
  * Many-to-many mapping between roles and users.
@@ -176,8 +165,8 @@ $schema->create('role_users', function (Blueprint $table) {
     $table->index('user_id');
     $table->index('role_id');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 echo "Created table 'role_users'..." . PHP_EOL;
 
@@ -186,7 +175,7 @@ echo "Created table 'role_users'..." . PHP_EOL;
  */
 $schema->create('sessions', function (Blueprint $table) {
     $table->string('id')->unique();
-    $table->integer('user_id')->nullable();
+    $table->integer('user_id')->unsigned()->nullable();
     $table->string('ip_address', 45)->nullable();
     $table->text('user_agent')->nullable();
     $table->text('payload');
@@ -195,13 +184,16 @@ $schema->create('sessions', function (Blueprint $table) {
 
     $table->foreign('user_id')->references('id')->on('users');
 
-    $table->collation = 'utf8_unicode_ci';
-    $table->charset = 'utf8mb4';
+    $table->collation = 'utf8_general_ci';
+    $table->charset = 'utf8';
 });
 echo "Created table 'sessions'..." . PHP_EOL;
 
 // Make sure that there are no users currently in the user table
 // We setup the root account here so it can be done independent of the version check
+
+// Could we set a custom start point for increaments? This would eliminate the need to check with the database on every request.
+// Might be worth implementing a 're-whitelist' function, in case cache is cleared.
 
 echo PHP_EOL . 'To complete the installation process, you must set up provide the email and service to be assigned as root admin (master).' . PHP_EOL;
 echo 'Please answer the following questions to complete this process:' . PHP_EOL;

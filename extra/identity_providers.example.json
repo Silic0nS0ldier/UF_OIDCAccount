@@ -1,3 +1,6 @@
 [
-    
+    {
+        "name": "Microsoft Graph",
+        "driver_name": "msgraph"
+    }
 ]

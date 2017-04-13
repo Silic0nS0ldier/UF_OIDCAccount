@@ -8,6 +8,10 @@
  */
 namespace UserFrosting\Sprinkle\OIDCAccount\ServicesProvider;
 
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
+use UserFrosting\Sprinkle\Core\Log\MixedFormatter;
+
 /**
  * Registers services for the OIDCAccount sprinkle.
  *
@@ -27,7 +31,7 @@ class OIDCAccountServicesProvider
          * Map database models to 'dbModel' on container.
          * This is used instead of classMapper to aid in readability.
          *
-         * Mappings added: Version, User, Role, Permission, Activity
+         * Mappings added: Version, User, Activity, Role, Permission
          */
         $container['dbModel'] = (object) [
             'Version'           => $container->classMapper->getClassMapping('version'),
@@ -36,5 +40,27 @@ class OIDCAccountServicesProvider
             'Role'              => 'UserFrosting\Sprinkle\OIDCAccount\Model\Role',
             'Permission'        => 'UserFrosting\Sprinkle\OIDCAccount\Model\Permission'
         ];
+
+        //also class mapper for back-compat
+
+        /**
+         * Auth logging with Monolog.
+         *
+         * Extend this service to push additional handlers onto the 'auth' log stack.
+         */
+        $container['authLogger'] = function ($c) {
+            $logger = new Logger('auth');
+
+            $logFile = $c->get('locator')->findResource('log://auth.log', true, true);
+
+            $handler = new StreamHandler($logFile);
+
+            $formatter = new MixedFormatter(null, null, true);
+
+            $handler->setFormatter($formatter);
+            $logger->pushHandler($handler);
+
+            return $logger;
+        };
     }
 }

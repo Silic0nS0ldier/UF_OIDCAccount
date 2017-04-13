@@ -11,3 +11,15 @@ Alternative to UF account system. Offloads login to identity provider supporting
     ```
     - Debuggable authentication system.<br/>
     The built in account system in UF uses `eval` to execute permission callbacks. As `eval` is largely sandboxed, crashes can cause irregular behaviour and cannot be logged. To resolve this issue, the 'permissions' table has a 'callback' and 'values' column.
+    ```json
+    [
+        {
+            "default": "value",
+            "name": "field_name"
+        },
+        "value",
+        {
+            "name": "field_name"
+        }
+    ]
+    ```
