@@ -15,11 +15,12 @@ Alternative to UF account system. Offloads login to identity provider supporting
     [
         {
             "default": "value",
-            "name": "field_name"
+            "_name": "field_name"
         },
         "value",
         {
-            "name": "field_name"
+            "_name": "field_name"
         }
     ]
     ```
+    `_name` is used to reduce likelihood of property name conflicts.

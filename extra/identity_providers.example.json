@@ -1,6 +1,11 @@
 [
     {
         "name": "Microsoft Graph",
-        "driver_name": "msgraph"
+        "driver_name": "msgraph",
+        "url": {
+            "authenticate": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize",
+            "access_token": "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
+            "api": "https://graph.microsoft.com/v1.0/"
+        }
     }
 ]
