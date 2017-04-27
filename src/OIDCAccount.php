@@ -6,7 +6,7 @@
  * @copyright Copyright (c) 2017 Jordan Mele
  * @license   
  */
-namespace UserFrosting\Sprinkle\Core;
+namespace UserFrosting\Sprinkle\OIDCAccount;
 
 use UserFrosting\Sprinkle\Core\Initialize\Sprinkle;
 use UserFrosting\Sprinkle\OIDCAccount\ServicesProvider\OIDCAccountServicesProvider;

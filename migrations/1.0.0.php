@@ -170,25 +170,6 @@ $schema->create('role_users', function (Blueprint $table) {
 });
 echo "Created table 'role_users'..." . PHP_EOL;
 
-/**
- * Table for database sessions.
- */
-$schema->create('sessions', function (Blueprint $table) {
-    $table->string('id')->unique();
-    $table->integer('user_id')->unsigned()->nullable();
-    $table->string('ip_address', 45)->nullable();
-    $table->text('user_agent')->nullable();
-    $table->text('payload');
-    $table->integer('last_activity');
-    $table->timestamps();
-
-    $table->foreign('user_id')->references('id')->on('users');
-
-    $table->collation = 'utf8_general_ci';
-    $table->charset = 'utf8';
-});
-echo "Created table 'sessions'..." . PHP_EOL;
-
 // Make sure that there are no users currently in the user table
 // We setup the root account here so it can be done independent of the version check
 

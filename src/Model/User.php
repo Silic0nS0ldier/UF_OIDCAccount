@@ -36,6 +36,7 @@ class User extends UFModel
      * @var string Columns that are permitted to be altered.
      */
     protected $fillable = [
+        "id",//temp
         'email',
         'first_name',
         'last_name',

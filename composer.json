@@ -18,8 +18,7 @@
     },
     "autoload": {
         "psr-4": {
-            "UserFrosting\\Sprinkle\\OIDCAccount\\": "src/",
-            "Silic0nS0ldier\\OIDCAccount\\": "src/"
+            "UserFrosting\\Sprinkle\\OIDCAccount\\": "src/"
         }
     }
 }

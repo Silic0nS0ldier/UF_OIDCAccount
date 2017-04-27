@@ -11,6 +11,7 @@ namespace UserFrosting\Sprinkle\OIDCAccount\ServicesProvider;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use UserFrosting\Sprinkle\Core\Log\MixedFormatter;
+use UserFrosting\Sprinkle\OIDCAccount\Twig\OIDCAccountExtension;
 
 /**
  * Registers services for the OIDCAccount sprinkle.
@@ -62,5 +63,28 @@ class OIDCAccountServicesProvider
 
             return $logger;
         };
+
+        // stub user for testing
+        $container['currentUser'] = function ($c) {
+            return new $c->dbModel->User([
+                "id" => 1,
+                "email" => "user@uowmail.edu.au",
+                "first_name" => "Foo",
+                "last_name" => "Bar",
+            ]);
+        };
+
+        /**
+         * Extends the 'view' service with the AccountExtension for Twig.
+         *
+         * Adds account-specific functions, globals, filters, etc to Twig, and the path to templates for the user theme.
+         */
+        $container->extend('view', function ($view, $c) {
+            $twig = $view->getEnvironment();
+            $extension = new OIDCAccountExtension($c);
+            $twig->addExtension($extension);
+
+            return $view;
+        });
     }
 }
