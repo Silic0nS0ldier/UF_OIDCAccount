@@ -47,7 +47,7 @@ Alternative to UF account system. Offloads login to identity provider supporting
 ]
 ```
     - `name` - Name of the service provider, for use on site.
-    - `alias` - A PHP friendly alias that will be used to reference provider within code, database and cache. MUST be unique, and MUST never be changed once in use.`
+    - `alias` - A PHP friendly alias that will be used to reference provider within code, database and cache. MUST be unique, and MUST never be changed once in use.
     - `icon` - Path to an icon representing the identity provider.
     - `uri` - URIs used with provider.
         - `base` - Base URI used by the identity provider. From this URI, configuration information is automatically downloaded and cached for later use. Man-in-the-middle attacks are covered via inspection of returned uris, not that this should be possible on a HTTPS connection. (this is me saying use HTTPS, for everyones sake)
