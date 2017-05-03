@@ -16,8 +16,7 @@ use UserFrosting\Sprinkle\Core\Model\UFModel;
  * @author Jordan Mele
  * @property int id
  * @property string email
- * @property string first_name
- * @property string last_name
+ * @property string name
  * @property string identity_provider Identity provider this user has connected with.
  * @property string identity_provider_user_id Id for this user on the used identity provider service.
  * @property string locale Users specified language. Note that i18n system currently not in place.
@@ -36,10 +35,8 @@ class User extends UFModel
      * @var string Columns that are permitted to be altered.
      */
     protected $fillable = [
-        "id",//temp
         'email',
-        'first_name',
-        'last_name',
+        'name',
         'identity_provider',
         'identity_provider_user_id',
         'locale',
@@ -68,7 +65,7 @@ class User extends UFModel
      */
     public function getFullNameAttribute()
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return $this->name;
     }
 
     /**
@@ -79,9 +76,6 @@ class User extends UFModel
     {
         return $this->hasMany(self::$ci->dbModel->Activity);
     }
-
-    //delete
-    //needed to eliminate all relations
 
     /**
      * Get the roles associated with this user.

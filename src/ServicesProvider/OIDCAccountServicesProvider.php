@@ -86,5 +86,7 @@ class OIDCAccountServicesProvider
 
             return $view;
         });
+
+        //load possible identity providers
     }
 }

@@ -28,8 +28,7 @@ if (in_array('account', $sprinkles) || in_array('admin', $sprinkles)) {
 $schema->create('users', function (Blueprint $table) {
     $table->increments('id');
     $table->string('email', 254);
-    $table->string('first_name', 30);
-    $table->string('last_name', 30);
+    $table->string('name', 60);
     $table->string('identity_provider')->comment('The identity provider this user signed up with.');
     $table->string('identity_provider_user_id')->comment('User id with identity provider. Needed as emails can change.');
     $table->string('locale', 10)->default('en_US')->comment('The language and locale to use for this user.');
