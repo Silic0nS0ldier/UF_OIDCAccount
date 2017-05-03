@@ -46,12 +46,12 @@ Alternative to UF account system. Offloads login to identity provider supporting
     }
 ]
 ```
-    - `name` - Name of the service provider, for use on site.
-    - `alias` - A PHP friendly alias that will be used to reference provider within code, database and cache. MUST be unique, and MUST never be changed once in use.
-    - `icon` - Path to an icon representing the identity provider.
-    - `uri` - URIs used with provider.
-        - `base` - Base URI used by the identity provider. From this URI, configuration information is automatically downloaded and cached for later use. Man-in-the-middle attacks are covered via inspection of returned uris, not that this should be possible on a HTTPS connection. (this is me saying use HTTPS, for everyones sake)
-        - `api` - An array of APIs that can be directly used via the authentication the identity provider supplies.
-            - `name` - A name for use in code. As with `alias`, this should be PHP friendly, as it intended for use in code.
-            - `uri` - URI for API.
-    - `client_id` Identifier provided by identity provider during application registration.
+- `name` - Name of the service provider, for use on site.
+- `alias` - A PHP friendly alias that will be used to reference provider within code, database and cache. MUST be unique, and MUST never be changed once in use.
+- `icon` - Path to an icon representing the identity provider.
+- `uri` - URIs used with provider.
+    - `base` - Base URI used by the identity provider. From this URI, configuration information is automatically downloaded and cached for later use. Man-in-the-middle attacks are covered via inspection of returned uris, not that this should be possible on a HTTPS connection. (this is me saying use HTTPS, for everyones sake)
+    - `api` - An array of APIs that can be directly used via the authentication the identity provider supplies.
+        - `name` - A name for use in code. As with `alias`, this should be PHP friendly, as it intended for use in code.
+        - `uri` - URI for API.
+- `client_id` Identifier provided by identity provider during application registration.
