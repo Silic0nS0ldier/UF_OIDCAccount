@@ -331,7 +331,7 @@ class IDP
         } else {
             // Last resort, query for fresh details.
             // Get data via curl
-            $query = curl_init($this->baseUri);
+            $query = curl_init($this->baseUri . ".well-known/openid-configuration");
             $result = curl_exec($query);
             // Attempt JSON decode, verify details by inspecting base uri for all links
             $config = json_decode($result);

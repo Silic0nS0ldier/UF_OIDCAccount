@@ -64,14 +64,15 @@ class OIDCAccountServicesProvider
             return $logger;
         };
 
-        // stub user for testing
+        // exposed user, or null
         $container['currentUser'] = function ($c) {
-            return new $c->dbModel->User([
-                "id" => 1,
-                "email" => "user@uowmail.edu.au",
-                "first_name" => "Foo",
-                "last_name" => "Bar",
-            ]);
+            // get user_id from session
+            $userId = $c->session->get('user_id');
+            if ($userId != null) {
+                return $c->dbModel->User::find($userId);
+            } else {
+                return null;
+            }
         };
 
         /**

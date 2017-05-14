@@ -16,6 +16,10 @@ use UserFrosting\Sprinkle\OIDCAccount\Authorize\ParamaterProcessor;
  *
  * Manages a collection of access condition callbacks, and uses them to perform access control checks on user objects.
  * @author Jordan Mele
+ * @todo Testing.
+ * @todo Implement hasRole function
+ * @todo Potentially rename checkAccess to hasPermission
+ * @todo Despite performance gains from eliminating eval, there are a ton of debug if statements. Great for debugging, but this has an enormous hit under high traffic, especially when permissions are frequently used. Additionally, its making it hard to read the code here. Can debugging be done better? 
  */
 class AuthorizationManager
 {

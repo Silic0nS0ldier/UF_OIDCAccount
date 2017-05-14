@@ -13,6 +13,7 @@ namespace UserFrosting\Sprinkle\OIDCAccount\Authorize;
  *
  * Processes parameters for permission callbacks.
  * @author Jordan Mele
+ * @todo Testing
  */
 class ParameterProcesser
 {

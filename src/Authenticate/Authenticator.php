@@ -16,6 +16,7 @@ use Jose\Loader;
  * Handles authentication tasks.
  *
  * @author Jordan Mele
+ * @todo Everything. This isn't event used atm.
  */
 class Authenticator
 {
@@ -35,18 +36,6 @@ class Authenticator
     private $config;
 
     //IDPList
-
-    //method to validate id_token, assume HS256 is the encryption used, plus private/public key pair
-    private function decodeIdToken($encodedIdToken, $keys)
-    {
-        //extract header (typ, alg)
-        //determine required decoding
-
-        //extract payload
-
-        //extract signature
-        //verify
-    }
 
     private function validateIdToken($idToken, $issuer, $subject)
     {

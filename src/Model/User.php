@@ -40,16 +40,14 @@ class User extends UFModel
         'oidc_issuer',
         'oidc_subject',
         'locale',
-        'enabled',
-        'email_verified'
+        'enabled'
     ];
 
     /**
      * @var array Attributes that should be cast to native types.
      */
     protected $casts = [
-        'enabled' => 'boolean',
-        'email_verified' => 'boolean'
+        'enabled' => 'boolean'
     ];
 
     /**

@@ -8,6 +8,6 @@
  */
 
 //oauth/oidc callback for login
-/*
-$app->get('/login', '')
-    ->setName('login');*/
+
+$app->post('/login', 'UserFrosting\Sprinkle\OIDCAccount\Controller\OIDCAccountController:loginRedirect')
+    ->setName('login');
