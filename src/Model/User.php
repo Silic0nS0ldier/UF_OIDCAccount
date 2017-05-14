@@ -37,8 +37,8 @@ class User extends UFModel
     protected $fillable = [
         'email',
         'name',
-        'identity_provider',
-        'identity_provider_user_id',
+        'oidc_issuer',
+        'oidc_subject',
         'locale',
         'enabled',
         'email_verified'

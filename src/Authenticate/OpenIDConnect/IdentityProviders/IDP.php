@@ -6,10 +6,10 @@
  * @copyright Copyright (c) 2017 Jordan Mele
  * @license   
  */
-namespace UserFrosting\Sprinkle\OIDCAccount\Authenticate\IdentityProviders;
+namespace UserFrosting\Sprinkle\OIDCAccount\Authenticate\OpenIDConnect\IdentityProviders;
 
 use Illuminate\Cache\CacheManager;
-use UserFrosting\Session\Session;
+use Slim\Csrf\Guard;
 
 /**
  * Represents an identity provider, and provides methods useful for integration with service.
@@ -54,22 +54,33 @@ class IDP
     private $oidcConfig;
 
     /**
+     * @var object JSON Web Keys (JWKs)
+     */
+    private $jwks;
+
+    /**
      * @var string client_id used to identify service at the identity provider.
      */
     private $clientId;
 
     /**
-     * @var \UserFrosting\Session\Session Session service for session access.
+     * @var \Slim\Csrf\Guard Session service for session access.
      */
-    private $session;
+    private $csrf;
+
+    /**
+     * @var integer Time in seconds that idp data should be cached.
+     */
+    private $cacheLength;
 
     /**
      * Create a new IDP object.
      *
      * @param object $rawIdpObject An identity provider object from the JSON configuration file.
      * @param \Illuminate\Cache\CacheManager Cache service for cache access.
+     * @param \Slim\Csrf\Guard Slim CSRF Guard object
      */
-    public function __construct($rawIdpObject, $cache, $session)
+    public function __construct($rawIdpObject, $cache, $csrf)
     {
         $invalidException = function($error) use ($rawIdpObject) {
             throw new \InvalidArguementException("Failed to parse identity provider details." . PHP_EOL . "Error: " . $error . PHP_EOL . "Provided data: " . json_encode($rawIdpObject));
@@ -132,8 +143,21 @@ class IDP
             $this->clientId = $rawIdpObject->client_id;
         }
 
+        // Validate cache time
+        if (is_null($rawIdpObject->cache_expires)) {
+            $this->cacheLength = 60 * 24 * 60;
+        } else if (!is_int($rawIdpObject->cache_expires)) {
+            $invalidException("cache_expires specified, but isn't an integer.");
+        } else {
+            if ($rawIdpObject->cache_expires <= 0) {
+                $invalidException("cache_expires specified, but is 0 or lower.");
+            } else {
+                $this->cacheLength = 60 * 24 * $rawIdpObject->cache_expires;
+            }
+        }
+
         $this->cache = $cache;
-        $this->session = $session;
+        $this->csrf = $csrf;
     }
 
     /**
@@ -161,8 +185,6 @@ class IDP
      *
      * @param string URI to redirect to after successful login, or irrecoverable failure.
      * @return string URI to facilitate login via identity provider.
-     *
-     * @todo Is CSRF protection something that will need to be implemented with this?
      */
     public function generateLoginUri($redirectUri)
     {
@@ -171,20 +193,16 @@ class IDP
         // Add client_id
         $url .= "?client_id=" . $this->clientId;
         // Add response_type
-        $url .= "&response_type=id_token";
+        $url .= "&response_type=id_token+code";
         // Add redirect_uri
         $url .= "&redirect_uri=" . urlencode($redirectUri);
         // Add response_mode (optional, but we can specify form_post here for better security)
         $url .= "&response_mode=form_post";
         // Add scope for openid
-        $url .= "&scope=openid";
-        // Add nonce safeguard
-        // Generate key
-        $guid = $this->generateGUID();
-        // Store in session
-        $this->session->set('oidc_nonce', $guid);
-        // Attach to url
-        $url .= "&nonce=" . urlencode($guid);
+        $url .= "&scope=" + urlencode("openid email");
+        // Add nonce safeguard (we use the CSRF token, as it'll only be erased if something weird happens, and is only wiped at the end of the end of the next request.)
+        $nonce = $this->csrf->getTokenName() . $this->csrf->getTokenValue();
+        $url .= "&nonce=" . urlencode($nonce);
 
         return $url;
     }
@@ -201,18 +219,43 @@ class IDP
     }
 
     /**
-    * Returns jwks_uri URI.
-    * URI returns json containing signtures that can be used to verify the signing userinfo_endpoint
+    * Returns JSON Web Keys (JWKs) used for decrypting encrypted id_token
     *
-    * @return string jwks_uri URI
+    * @return object JWKs object
     */
-    public function getJwksUri()
+    public function getJWKs()
     {
         return $this->getOidcConfig()->jwks_uri;
+        if (isset($this->jwks)) {
+            // Its stored locally, return that
+            return $this->jwks;
+        } elseif ($this->cache->get("$this->alias-jwks") != null) {
+            // Its been cached, store it locally and return that
+            $this->jwks = json_decode($this->cache->get("$this->alias-jwks"));
+            return $this->jwks;
+        } else {
+            // We don't have it, but the provider does. Time to fetch some fresh keys.
+            // Get data via curl
+            $query = curl_init($this->getOidcConfig()->jwks_uri);
+            $result = curl_exec($query);
+            // Attempt JSON decode, verify details by inspecting base uri for all links
+            $jwks = json_decode($result);
+            if ($config === null) {
+                throw new \RuntimeException("Unable to retrieve JSON Web Keys (JWKs) for $this->alias.");
+            }
+            // Store the keys in cache
+            $this->cache->put("$this->alias-jwks", json_encode($jwks), $this->cacheLength);
+            // Store locally
+            $this->jwks = $jwks;
+            // Return keys
+            return $this->jwks;
+        }
     }
 
-    //get logout url (aka end_session_endpoint)
-    //identity provider will indicate to all connected services that the specified user has logged out.
+    /**
+     * Generates logout uri for the IDP. (aka end_session_endpoint)
+     * Note: IDP may announce logout to connected services.
+     */
     public function generateLogoutUri($redirectUri)
     {
         // Get base url
@@ -281,9 +324,9 @@ class IDP
         // First check if configuration has already been fetched.
         if (isset($this->oidcConfig)) {
             return $this->oidcConfig;
-        } elseif ($this->cache->get("idpcconfig-$this->alias") != null) {
+        } elseif ($this->cache->get("$this->alias-idpcconfig") != null) {
             // Next check the cache
-            $this->oidcConfig = json_decode($this->cache->get("idpcconfig-$this->alias-date"));
+            $this->oidcConfig = json_decode($this->cache->get("$this->alias-idpcconfig"));
             return $this->oidcConfig;
         } else {
             // Last resort, query for fresh details.
@@ -325,40 +368,10 @@ class IDP
             $this->oidcConfig = $config;
             
             // Cache (stored for 60 days)
-            $this->cache->put("idpcconfig-$this->alias-date", json_encode($config), 60 * 24 * 60);
+            $this->cache->put("$this->alias-idpcconfig", json_encode($config), $this->cacheLength);
 
             // Finally return config
             return $this->oidcConfig;
         }
     }
-
-    /**
-	 * Generate v4 GUID
-	 * 
-	 * Version 4 GUIDs are pseudo-random. This is a non-issue as further validation is provided via CSRF checks.
-     * @source https://gist.githubusercontent.com/dahnielson/508447/raw/abc0cd5d7daa0484187bb3ff6d984d2aef94930a/UUID.php
-	 */
-	public static function generateGUID()
-	{
-		return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-
-		// 32 bits for "time_low"
-		mt_rand(0, 0xffff), mt_rand(0, 0xffff),
-
-		// 16 bits for "time_mid"
-		mt_rand(0, 0xffff),
-
-		// 16 bits for "time_hi_and_version",
-		// four most significant bits holds version number 4
-		mt_rand(0, 0x0fff) | 0x4000,
-
-		// 16 bits, 8 bits for "clk_seq_hi_res",
-		// 8 bits for "clk_seq_low",
-		// two most significant bits holds zero and one for variant DCE1.1
-		mt_rand(0, 0x3fff) | 0x8000,
-
-		// 48 bits for "node"
-		mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
-		);
-	}
 }

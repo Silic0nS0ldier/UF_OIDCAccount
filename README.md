@@ -42,7 +42,8 @@ Alternative to UF account system. Offloads login to identity provider supporting
                 }
             ]
         },
-        "client_id": ""
+        "client_id": "",
+        "cache_expires": 60
     }
 ]
 ```
@@ -54,4 +55,12 @@ Alternative to UF account system. Offloads login to identity provider supporting
     - `api` - An array of APIs that can be directly used via the authentication the identity provider supplies.
         - `name` - A name for use in code. As with `alias`, this should be PHP friendly, as it intended for use in code.
         - `uri` - URI for API.
-- `client_id` Identifier provided by identity provider during application registration.
+- `client_id` - Identifier provided by identity provider during application registration.
+- `cache_expires` - Optional. Specifies number of days before cached configuration data must be fetched from identity provider again.
+
+
+- JWT may need to be decoded, and have signing checked.
+- aud === client_id
+- a 'code' response_type must be used to give the server a key to access the server with, that should be exchanged with something that lasts longer immeditely
+- id_token should have a header with the 'kid', the id of the key used to encrypt, and 'alg', the algorithm used. At least if encrypted.
+- Goal is for RSA256 support only initally

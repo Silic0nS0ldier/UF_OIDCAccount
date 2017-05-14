@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Microsoft",
+        "alias": "ms",
+        "icon": "local/images/microsoft_idp_icon.png",
+        "uri": {
+            "base": "https://login.microsoftonline.com/{tenant}/",
+            "api": [
+                {
+                    "name": "ms_graph",
+                    "uri": "https://graph.microsoft.com/v1.0/"
+                }
+            ]
+        },
+        "client_id": "00000000-0000-0000-0000-000000000000",
+        "cache_expires": 60
+    }
+]

@@ -27,18 +27,17 @@ if (in_array('account', $sprinkles) || in_array('admin', $sprinkles)) {
  */
 $schema->create('users', function (Blueprint $table) {
     $table->increments('id');
-    $table->string('email', 254);
-    $table->string('name', 60);
-    $table->string('identity_provider')->comment('The identity provider this user signed up with.');
-    $table->string('identity_provider_user_id')->comment('User id with identity provider. Needed as emails can change.');
+    $table->string('email', 254)->comment("Users email with identity provider, not that verification happens IDP side.");
+    $table->string('name', 60);// Only the name paramter is set in stone.
+    $table->string('oidc_issuer')->comment('The identity provider (issuer) URI.');
+    $table->string('oidc_subject')->comment('The ID that belongs to this user, from the identity provider.');
     $table->string('locale', 10)->default('en_US')->comment('The language and locale to use for this user.');
     $table->boolean('enabled')->default(1)->comment("Set to 1 if the user account is currently enabled, 0 otherwise.  Disabled accounts cannot be logged in to, but they retain all of their data and settings.");
-    $table->boolean('email_verified')->default(0)->comment('Indicates email can be accessed by user.');
     $table->timestamps();
 
-    $table->unique([ 'identity_provider', 'identity_provider_user_id' ]);
-    $table->unique([ 'identity_provider', 'email' ]);
-    $table->index('identity_provider_user_id');
+    $table->unique([ 'oidc_issuer', 'oidc_subject' ]);
+    $table->unique([ 'oidc_issuer', 'email' ]);
+    $table->index('oidc_subject');
     $table->index('email');
 
     $table->collation = 'utf8_general_ci';
@@ -169,11 +168,16 @@ $schema->create('role_users', function (Blueprint $table) {
 });
 echo "Created table 'role_users'..." . PHP_EOL;
 
+echo "There is currently no root-admin functionality. A later release will introduce this.";
+
+/*
+
 // Make sure that there are no users currently in the user table
 // We setup the root account here so it can be done independent of the version check
 
 // Could we set a custom start point for increaments? This would eliminate the need to check with the database on every request.
 // Might be worth implementing a 're-whitelist' function, in case cache is cleared.
+
 
 echo PHP_EOL . 'To complete the installation process, you must set up provide the email and service to be assigned as root admin (master).' . PHP_EOL;
 echo 'Please answer the following questions to complete this process:' . PHP_EOL;
@@ -204,3 +208,4 @@ $container->cache->forever('admin_id_provider', $service);
 echo PHP_EOL;
 
 echo PHP_EOL . "The 'identity provider' - 'email' combination has been whitelisted. Site is prepared to creation of root-admin upon signing in with this combination." . PHP_EOL;
+*/
