@@ -38,7 +38,8 @@ class OIDCAccountExtension extends \Twig_Extension
     public function getGlobals()
     {
         return [
-            'current_user'   => $this->c->currentUser
+            'current_user'   => $this->c->currentUser,
+            'oidc_links'     => $this->c->oidcLinks
         ];
     }
 }

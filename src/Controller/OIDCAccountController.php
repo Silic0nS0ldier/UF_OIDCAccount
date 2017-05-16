@@ -52,4 +52,17 @@ class OIDCAccountController extends SimpleController {
         //redirect to index
         return $response->withRedirect($this->ci->router->pathFor('index'), 302);
     }
+
+    // definitly a stub...
+    public function logoutRedirect($request, $response, $args)
+    {
+        // Completely destroy the session
+        $this->ci->session->destroy();
+
+        // Restart the session service
+        $this->ci->session->start();
+
+        //redirect to idp logout link
+        return $response->withRedirect($this->ci->oidcLinks->logout, 302);
+    }
 }

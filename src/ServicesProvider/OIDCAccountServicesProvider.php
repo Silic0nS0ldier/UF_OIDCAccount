@@ -89,5 +89,11 @@ class OIDCAccountServicesProvider
         });
 
         //load possible identity providers
+
+        // hacky way to get needed oidc links in for demonstration
+        $container['oidcLinks'] = (object) [
+            'login'  => 'https://login.microsoftonline.com/uow.edu.au/oauth2/authorize?client_id=3f9c4604-42cb-4a49-922d-bcb7949c635c&response_type=id_token+code&redirect_uri=http%3A%2F%2Flocalhost%2Feventsatuow%2Fpublic%2Flogin&response_mode=form_post&scope=openid+email&nonce=garbageprotection',
+            'logout' => 'https://login.microsoftonline.com/uow.edu.au/oauth2/logout'
+        ];
     }
 }
