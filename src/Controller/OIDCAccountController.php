@@ -38,6 +38,28 @@ class OIDCAccountController extends SimpleController {
                 // hacky fix for dodgy email claims
                 $id_token->email = $id_token->upn;
             }
+
+            //make sure is a uow email
+            $email = $id_token->email;
+            $allowed = ['uowmail.edu.au', 'uow.edu.au'];
+
+            // Make sure the address is valid
+            if (filter_var($email, FILTER_VALIDATE_EMAIL))
+            {
+                $explodedEmail = explode('@', $email);
+                $domain = array_pop($explodedEmail);
+
+                if (!in_array($domain, $allowed))
+                {
+                    // Not allowed
+                    return $response->withRedirect($this->ci->oidcLinks->logout . '?
+post_logout_redirect_uri=' . urlencode($this->ci->config['site.uri.public']), 302);
+                }
+
+            } else {
+                throw new \Exception();
+            }
+
             $user = new $this->ci->dbModel->User([
                 'email'             => $id_token->email,
                 'name'              => $id_token->name,
