@@ -92,7 +92,7 @@ class OIDCAccountServicesProvider
 
         // hacky way to get needed oidc links in for demonstration
         $container['oidcLinks'] = (object) [
-            'login'  => 'https://login.microsoftonline.com/uow.edu.au/oauth2/authorize?client_id=' . $c->config['client_id'] .'&response_type=id_token+code&redirect_uri=' . urlencode($c->config['site.uri.public']) . '%2Flogin&response_mode=form_post&scope=openid+email&nonce=garbageprotection',
+            'login'  => 'https://login.microsoftonline.com/uow.edu.au/oauth2/authorize?client_id=' . $container->config['client_id'] .'&response_type=id_token+code&redirect_uri=' . urlencode($container->config['site.uri.public']) . '%2Flogin&response_mode=form_post&scope=openid+email&nonce=garbageprotection',
             'logout' => 'https://login.microsoftonline.com/uow.edu.au/oauth2/logout'
         ];
     }
