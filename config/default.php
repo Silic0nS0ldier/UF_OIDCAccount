@@ -38,5 +38,6 @@
         'throttles' => [
             'registration_attempt' => null,
             'sign_in_attempt' => null
-        ]
+        ],
+        'client_id' => env('CLIENT_ID')
     ];
